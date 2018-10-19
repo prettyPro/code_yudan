@@ -14,3 +14,5 @@
 13 'zhidao',
 14 'wohuitongzhide',
 15 'xing'
+
+['bushi', 'dui', 'shi', 'bukeyi', 'buneng', 'keyi', 'neng', 'jiuzheyige', 'meiyou', 'you', 'burenshi', 'buzhidao', 'renshi', 'zhidao', 'wohuitongzhide', 'xing']

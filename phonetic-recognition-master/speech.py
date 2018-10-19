@@ -17,16 +17,16 @@ dropout_keep_prob = 0.78    # dropout参数,为了减轻过拟合的影响，我
 evaluate_every = 10         # 多少step测试一次
 checkpoint_every = 500      # 多少step保存一次模型
 num_checkpoints = 1         # 最多保存多少个模型
-
+classes = ['bushi', 'dui', 'shi', 'bukeyi', 'buneng', 'keyi', 'neng', 'jiuzheyige', 'meiyou', 'you', 'burenshi', 'buzhidao', 'renshi', 'zhidao', 'wohuitongzhide', 'xing']
 # 加载训练用的特征和标签
-# train_features = np.load('features_npy/train_me2_fbank_features.npy')
-# train_labels = np.load('features_npy/train_8k_labels.npy')
+train_features = np.load('features_npy/train_me2_fbank_features.npy')
+train_labels = np.load('features_npy/train_8k_labels.npy')
 
 # 计算最长的step,分为step帧
-# wav_max_len = max([len(feature) for feature in train_features])
-# print("max_len:", wav_max_len)
-wav_max_len = 228
-time_000 = time.time()
+wav_max_len = max([len(feature) for feature in train_features])
+print("max_len:", wav_max_len)
+# wav_max_len = 228
+# time_000 = time.time()
 #特征预处理
 def fill_zero(features):
     # 填充0
@@ -54,7 +54,7 @@ def get_train_set():
 #参数：批次，序列号（分帧的数量），每个序列的数据(batch, 199, 40)
 x = tf.placeholder("float",  [None,  wav_max_len, n_inputs])
 y = tf.placeholder("float",  [None])
-dropout = tf.placeholder(tf.float32)
+# dropout = tf.placeholder(tf.float32)
 
 # labels转one_hot格式
 one_hot_labels = tf.one_hot(indices=tf.cast(y,  tf.int32),  depth=n_classes)
@@ -154,30 +154,32 @@ def train():
         for i, batch in enumerate(batches):
             i = i + 1
             x_batch, y_batch = zip(*batch)
-            sess.run([optimizer],  feed_dict={x: x_batch,  y: y_batch,  dropout: dropout_keep_prob})
+            # sess.run([optimizer],  feed_dict={x: x_batch,  y: y_batch,  dropout: dropout_keep_prob})
+            sess.run([optimizer], feed_dict={x: x_batch, y: y_batch})
             sess.run([optimizer, cross_entropy, prediction], feed_dict={x: x_batch, y: y_batch})
 
             if i % 100 == 0:
                 # sess.run(tf.assign(lr, lr * (0.90 ** (i // evaluate_every))))
                 # learning_rate = sess.run(lr)
-                tr_acc, _loss = sess.run([accuracy, cross_entropy],feed_dict={x: train_x, y: train_y, dropout: dropout_keep_prob})
-                ts_acc = sess.run(accuracy, feed_dict={x: test_x, y: test_y, dropout: dropout_keep_prob})
-                # tr_acc,  _loss = sess.run([accuracy,  cross_entropy],  feed_dict={x: train_x,  y: train_y,  dropout: 1.0})
+                # tr_acc, _loss = sess.run([accuracy, cross_entropy],feed_dict={x: train_x, y: train_y, dropout: dropout_keep_prob})
+                # ts_acc = sess.run(accuracy, feed_dict={x: test_x, y: test_y, dropout: dropout_keep_prob})
+                tr_acc, _loss = sess.run([accuracy, cross_entropy],feed_dict={x: train_x, y: train_y})
+                ts_acc = sess.run(accuracy, feed_dict={x: test_x, y: test_y})
                 print("Iter {}, loss {:.5f}, tr_acc {:.5f}, ts_acc {:.5f}".format(i, _loss, tr_acc, ts_acc))
 
             # 保存模型
             if i % checkpoint_every == 0:
-                path = saver.save(sess, "model_0.78/sava.ckpt")
+                path = saver.save(sess, "model_1/sava.ckpt")
                 print("Saved model checkpoint to {}\n".format(path))
 
 def predict(wav_files):
     input = get_data.pre_fbank_features(wav_files)
     input_x = fill_zero(input)
     with tf.Session() as sess:
-        saver.restore(sess, "model_0.78/sava.ckpt")
+        saver.restore(sess, "model_1/sava.ckpt")
         outputs_x = sess.run(prediction, feed_dict={x: input_x})
         outputs_label = np.argmax(outputs_x, 1)
-        print(outputs_label)
+        print(classes[outputs_label])
 
 def check():
     # Read data from checkpoint file
@@ -189,7 +191,7 @@ def check():
         print(reader.get_tensor(key))
 
 if __name__ == "__main__":
-    # train()
-    predict("webrtc_vad/recording/zhidao001.wav")
-    print("runtime_all:", time.time() - time_000, "s")
+    train()
+    # predict("webrtc_vad/recording/zhidao001.wav")
+    # print("runtime_all:", time.time() - time_000, "s")
     # check()
